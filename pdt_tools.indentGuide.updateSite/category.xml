@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <description name="Indent Guide" url="https://github.com/sschaef/IndentGuide/tree/master/pdt_tools.indentGuide.updateSite">
+   <description name="Indent Guide">
       An indent guide for Eclipse
    </description>
-   <feature url="features/jp.sourceforge.pdt_tools.indentGuide.feature_1.4.1.jar" id="jp.sourceforge.pdt_tools.indentGuide.feature" version="1.4.1">
+   <feature url="features/indentGuideFeature_1.4.1.qualifier.jar" id="indentGuideFeature" version="1.4.1.qualifier">
       <category name="pdt_tools.general"/>
    </feature>
    <category-def name="pdt_tools.general" label="General">

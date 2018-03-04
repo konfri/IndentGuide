@@ -55,10 +55,10 @@ public class IndentGuidePainter implements IPainter, PaintListener {
 	private int lineWidth;
 	private int lineShift;
 	private int spaceWidth;
-	private boolean drawLeftEnd;
-	private boolean drawBlankLine;
-	private boolean skipCommentBlock;
 
+	private IndentSettings indentSettings;
+	private LineIntendCalculator lineIntendCalculator = new LineIntendCalculator();
+	    
 	/**
 	 * Creates a new painter for the given text viewer.
 	 * 
@@ -79,10 +79,8 @@ public class IndentGuidePainter implements IPainter, PaintListener {
 		lineStyle = store.getInt(PreferenceConstants.LINE_STYLE);
 		lineWidth = store.getInt(PreferenceConstants.LINE_WIDTH);
 		lineShift = store.getInt(PreferenceConstants.LINE_SHIFT);
-		drawLeftEnd = store.getBoolean(PreferenceConstants.DRAW_LEFT_END);
-		drawBlankLine = store.getBoolean(PreferenceConstants.DRAW_BLANK_LINE);
-		skipCommentBlock = store
-				.getBoolean(PreferenceConstants.SKIP_COMMENT_BLOCK);
+		
+		indentSettings = new IndentSettings();
 	}
 
 	/*
@@ -177,10 +175,10 @@ public class IndentGuidePainter implements IPainter, PaintListener {
 			if (fIsAdvancedGraphicsPresent) {
 				int alpha = gc.getAlpha();
 				gc.setAlpha(this.lineAlpha);
-				drawLineRange(gc, startLine, endLine, x, w);
+				drawLineRange(gc, startLine, endLine);
 				gc.setAlpha(alpha);
 			} else {
-				drawLineRange(gc, startLine, endLine, x, w);
+				drawLineRange(gc, startLine, endLine);
 			}
 			gc.setForeground(fgColor);
 			gc.setLineAttributes(lineAttributes);
@@ -201,107 +199,32 @@ public class IndentGuidePainter implements IPainter, PaintListener {
 	 * @param w
 	 *            the width of the drawing range
 	 */
-	private void drawLineRange(GC gc, int startLine, int endLine, int x, int w) {
-		int tabs = fTextWidget.getTabs();
+	private void drawLineRange(GC gc, int startLine, int endLine) {
+		StyledText styledText = fTextWidget;
+		int tabToSpaces = styledText.getTabs();
 
-		StyledTextContent content = fTextWidget.getContent();
-		for (int line = startLine; line <= endLine; line++) {
-			int widgetOffset = fTextWidget.getOffsetAtLine(line);
-			if (!isFoldedLine(content.getLineAtOffset(widgetOffset))) {
-				String text = fTextWidget.getLine(line);
-				int extend = 0;
-				if (skipCommentBlock && assumeCommentBlock(text, tabs)) {
-					extend -= tabs;
-				}
-				if (drawBlankLine && text.trim().length() == 0) {
-					int prevLine = line;
-					while (--prevLine >= 0) {
-						text = fTextWidget.getLine(prevLine);
-						if (text.trim().length() > 0) {
-							int postLine = line;
-							int lineCount = fTextWidget.getLineCount();
-							while (++postLine < lineCount) {
-								String tmp = fTextWidget.getLine(postLine);
-								if (tmp.trim().length() > 0) {
-									if (countSpaces(text, tabs) < countSpaces(
-											tmp, tabs)) {
-										extend += tabs;
-									}
-									break;
-								}
-							}
-							break;
-						}
-					}
-				}
-				int count = countSpaces(text, tabs) + extend;
-				for (int i = drawLeftEnd ? 0 : tabs; i < count; i += tabs) {
-					draw(gc, widgetOffset, i);
-				}
+		for (int lineNr = startLine; lineNr <= endLine; lineNr++) {
+			if (isBlockCollapsedAtLine(lineNr)) {
+				continue;
+			}
+
+			Iterable<Integer> xxx = lineIntendCalculator.calculate(styledText, lineNr, tabToSpaces, indentSettings);
+			for (Integer integer : xxx) {
+				draw(gc, integer);
 			}
 		}
 	}
 
-	private int countSpaces(String str, int tabs) {
-		int count = 0;
-		for (int i = 0; i < str.length(); i++) {
-			switch (str.charAt(i)) {
-			case ' ':
-				count++;
-				break;
-			case '\t':
-				int z = tabs - count % tabs;
-				count += z;
-				break;
-			default:
-				return count;
-			}
-		}
-		return count;
-	}
-
-	private boolean assumeCommentBlock(String text, int tabs) {
-		int count = countSpaces(text, tabs);
-		count = (count / tabs) * tabs;
-		int index = 0;
-		for (int i = 0; i < count; i++) {
-			switch (text.charAt(index)) {
-			case ' ':
-				index++;
-				break;
-			case '\t':
-				index++;
-				int z = tabs - i % tabs;
-				i += z;
-				break;
-			default:
-				i = count;
-			}
-		}
-		text = text.substring(index);
-		if (text.matches("^ \\*([ \\t].*|/.*|)$")) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Check if the given widget line is a folded line.
-	 * 
-	 * @param widgetLine
-	 *            the widget line number
-	 * @return <code>true</code> if the line is folded
-	 */
-	private boolean isFoldedLine(int widgetLine) {
-		if (fTextViewer instanceof ITextViewerExtension5) {
-			ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
-			int modelLine = extension.widgetLine2ModelLine(widgetLine);
-			int widgetLine2 = extension.modelLine2WidgetLine(modelLine + 1);
-			return widgetLine2 == -1;
-		}
-		return false;
-	}
-
+	private boolean isBlockCollapsedAtLine(int line) {
+        if (fTextViewer instanceof ITextViewerExtension5) {
+            ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
+            int modelLine = extension.widgetLine2ModelLine(line);
+            int widgetLine2 = extension.modelLine2WidgetLine(modelLine + 1);
+            return widgetLine2 == -1;
+        }
+        return false;
+    }
+	
 	/**
 	 * Redraw all of the text widgets visible content.
 	 */
@@ -313,13 +236,10 @@ public class IndentGuidePainter implements IPainter, PaintListener {
 	 * 
 	 * @param gc
 	 * @param offset
-	 * @param column
 	 */
-	private void draw(GC gc, int offset, int column) {
+	private void draw(GC gc, int offset) {
 		Point pos = fTextWidget.getLocationAtOffset(offset);
-		pos.x += column * spaceWidth + lineShift;
-		gc.drawLine(pos.x, pos.y, pos.x,
-				pos.y + fTextWidget.getLineHeight(offset));
+		gc.drawLine(pos.x, pos.y, pos.x, pos.y + fTextWidget.getLineHeight(offset));
 	}
 
 	/**

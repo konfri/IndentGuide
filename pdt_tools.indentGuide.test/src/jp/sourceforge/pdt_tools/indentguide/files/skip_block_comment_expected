@@ -1,0 +1,15 @@
+public IndentGuidePainter(ITextViewer textViewer) {
+|    super();
+|    /*
+|     * just in front of the block comment should not be any indent
+|     * block comment
+|     * block comment
+|     * block comment
+|     * block comment
+|     * block comment
+|     */
+|
+|    // for the regular comment this is not needed
+|    // .....
+|
+}

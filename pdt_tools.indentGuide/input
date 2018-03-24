@@ -1,0 +1,55 @@
+public class Test {
+
+	private static void blaExampleMethjod(String string) {
+		if (true) {
+			if (true) {
+				if (true) {
+					if (true) {
+						if (true) {
+							if (true) {
+								if (true) {
+									if (true) {
+										if (true) {
+											if (true) {
+												System.out.println("lest");
+												System.out.println("West");
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	private static void blaExampleMethjod2(String string) {
+        if (true) {
+            if (true) {
+                if (true) {
+                    if (true) {
+                        if (true) {
+                            if (true) {
+                                if (true) {
+                                    if (true) {
+                                        if (true) {
+                                            if (true) {
+                                            		System.out.println("lest");
+                                                System.out.println("West");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+	public static void main(String[] args) {
+		blaExampleMethjod("asdfasd");
+	}
+}

@@ -13,8 +13,6 @@
  *******************************************************************************/
 package jp.sourceforge.pdt_tools.indentguide;
 
-import jp.sourceforge.pdt_tools.indentguide.preferences.PreferenceConstants;
-
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -24,7 +22,6 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerExtension5;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.custom.StyledTextContent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
@@ -32,190 +29,209 @@ import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.LineAttributes;
 import org.eclipse.swt.graphics.Point;
 
+import jp.sourceforge.pdt_tools.indentguide.preferences.PreferenceConstants;
+
 /**
  * A painter for drawing visible characters for (invisible) whitespace
  * characters.
- * 
+ *
  * @since 3.3
  * @see org.eclipse.jface.text.WhitespaceCharacterPainter
  */
 public class IndentGuidePainter implements IPainter, PaintListener {
 
-	/** Indicates whether this painter is active. */
-	private boolean fIsActive = false;
-	/** The source viewer this painter is attached to. */
-	private ITextViewer fTextViewer;
-	/** The viewer's widget. */
-	private StyledText fTextWidget;
-	/** Tells whether the advanced graphics sub system is available. */
-	private final boolean fIsAdvancedGraphicsPresent;
+    /** Indicates whether this painter is active. */
+    private boolean fIsActive = false;
+    /** The source viewer this painter is attached to. */
+    private ITextViewer fTextViewer;
+    /** The viewer's widget. */
+    private StyledText fTextWidget;
+    /** Tells whether the advanced graphics sub system is available. */
+    private final boolean fIsAdvancedGraphicsPresent;
 
-	private int lineAlpha;
-	private int lineStyle;
-	private int lineWidth;
-	private int lineShift;
-	private int spaceWidth;
+    private int lineAlpha;
+    private int lineStyle;
+    private int lineWidth;
+    private int lineShift;
+    private int spaceWidth;
 
-	private IndentSettings indentSettings;
-	private LineIntendCalculator lineIntendCalculator = new LineIntendCalculator();
-	    
-	/**
-	 * Creates a new painter for the given text viewer.
-	 * 
-	 * @param textViewer
-	 *            the text viewer the painter should be attached to
-	 */
-	public IndentGuidePainter(ITextViewer textViewer) {
-		super();
-		fTextViewer = textViewer;
-		fTextWidget = textViewer.getTextWidget();
-		GC gc = new GC(fTextWidget);
-		gc.setAdvanced(true);
-		fIsAdvancedGraphicsPresent = gc.getAdvanced();
-		gc.dispose();
+    private IndentSettings indentSettings;
 
-		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		lineAlpha = store.getInt(PreferenceConstants.LINE_ALPHA);
-		lineStyle = store.getInt(PreferenceConstants.LINE_STYLE);
-		lineWidth = store.getInt(PreferenceConstants.LINE_WIDTH);
-		lineShift = store.getInt(PreferenceConstants.LINE_SHIFT);
-		
-		indentSettings = new IndentSettings();
-	}
+    /**
+     * Creates a new painter for the given text viewer.
+     *
+     * @param textViewer
+     *            the text viewer the painter should be attached to
+     */
+    public IndentGuidePainter(ITextViewer textViewer) {
+        super();
 
-	/*
-	 * @see org.eclipse.jface.text.IPainter#dispose()
-	 */
-	public void dispose() {
-		fTextViewer = null;
-		fTextWidget = null;
-	}
+        fTextViewer = textViewer;
+        fTextWidget = textViewer.getTextWidget();
+        GC gc = new GC(fTextWidget);
+        gc.setAdvanced(true);
+        fIsAdvancedGraphicsPresent = gc.getAdvanced();
+        gc.dispose();
 
-	/*
-	 * @see org.eclipse.jface.text.IPainter#paint(int)
-	 */
-	public void paint(int reason) {
-		IDocument document = fTextViewer.getDocument();
-		if (document == null) {
-			deactivate(false);
-			return;
-		}
-		if (!fIsActive) {
-			fIsActive = true;
-			fTextWidget.addPaintListener(this);
-			redrawAll();
-		} else if (reason == CONFIGURATION || reason == INTERNAL) {
-			redrawAll();
-		} else if (reason == TEXT_CHANGE) {
-			// redraw current line only
-			try {
-				IRegion lineRegion = document
-						.getLineInformationOfOffset(getDocumentOffset(fTextWidget
-								.getCaretOffset()));
-				int widgetOffset = getWidgetOffset(lineRegion.getOffset());
-				int charCount = fTextWidget.getCharCount();
-				int redrawLength = Math.min(lineRegion.getLength(), charCount
-						- widgetOffset);
-				if (widgetOffset >= 0 && redrawLength > 0) {
-					fTextWidget.redrawRange(widgetOffset, redrawLength, true);
-				}
-			} catch (BadLocationException e) {
-				// ignore
-			}
-		}
-	}
+        IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+        lineAlpha = store.getInt(PreferenceConstants.LINE_ALPHA);
+        lineStyle = store.getInt(PreferenceConstants.LINE_STYLE);
+        lineWidth = store.getInt(PreferenceConstants.LINE_WIDTH);
+        lineShift = store.getInt(PreferenceConstants.LINE_SHIFT);
 
-	/*
-	 * @see org.eclipse.jface.text.IPainter#deactivate(boolean)
-	 */
-	public void deactivate(boolean redraw) {
-		if (fIsActive) {
-			fIsActive = false;
-			fTextWidget.removePaintListener(this);
-			if (redraw) {
-				redrawAll();
-			}
-		}
-	}
+        this.indentSettings = IndentSettings.builder()
+                .drawBlankLine(store.getBoolean(PreferenceConstants.DRAW_BLANK_LINE))
+                .drawLeftEnd(store.getBoolean(PreferenceConstants.DRAW_LEFT_END))
+                .skipBlockComment(store.getBoolean(PreferenceConstants.SKIP_COMMENT_BLOCK))
+                .build();
+    }
 
-	/*
-	 * @see
-	 * org.eclipse.jface.text.IPainter#setPositionManager(org.eclipse.jface.
-	 * text.IPaintPositionManager)
-	 */
-	public void setPositionManager(IPaintPositionManager manager) {
-		// no need for a position manager
-	}
+    /*
+     * @see org.eclipse.jface.text.IPainter#dispose()
+     */
+    public void dispose() {
+        fTextViewer = null;
+        fTextWidget = null;
+    }
 
-	/*
-	 * @see
-	 * org.eclipse.swt.events.PaintListener#paintControl(org.eclipse.swt.events
-	 * .PaintEvent)
-	 */
-	public void paintControl(PaintEvent event) {
-		if (fTextWidget != null) {
-			handleDrawRequest(event.gc, event.x, event.y, event.width,
-					event.height);
-		}
-	}
+    /*
+     * @see org.eclipse.jface.text.IPainter#paint(int)
+     */
+    public void paint(int reason) {
+        IDocument document = fTextViewer.getDocument();
+        if (document == null) {
+            deactivate(false);
+            return;
+        }
+        if (!fIsActive) {
+            fIsActive = true;
+            fTextWidget.addPaintListener(this);
+            redrawAll();
+        } else if (reason == CONFIGURATION || reason == INTERNAL) {
+            redrawAll();
+        } else if (reason == TEXT_CHANGE) {
+            // redraw current line only
+            try {
+                IRegion lineRegion = document
+                        .getLineInformationOfOffset(getDocumentOffset(fTextWidget.getCaretOffset()));
+                int widgetOffset = getWidgetOffset(lineRegion.getOffset());
+                int charCount = fTextWidget.getCharCount();
+                int redrawLength = Math.min(lineRegion.getLength(), charCount - widgetOffset);
+                if (widgetOffset >= 0 && redrawLength > 0) {
+                    fTextWidget.redrawRange(widgetOffset, redrawLength, true);
+                }
+            } catch (BadLocationException e) {
+                // ignore
+            }
+        }
+    }
 
-	/*
-	 * Draw characters in view range.
-	 */
-	private void handleDrawRequest(GC gc, int x, int y, int w, int h) {
-		int startLine = fTextWidget.getLineIndex(y);
-		int endLine = fTextWidget.getLineIndex(y + h - 1);
-		if (startLine <= endLine && startLine < fTextWidget.getLineCount()) {
-			Color fgColor = gc.getForeground();
-			LineAttributes lineAttributes = gc.getLineAttributes();
-			gc.setForeground(Activator.getDefault().getColor());
-			gc.setLineStyle(lineStyle);
-			gc.setLineWidth(lineWidth);
-			spaceWidth = gc.getAdvanceWidth(' ');
-			if (fIsAdvancedGraphicsPresent) {
-				int alpha = gc.getAlpha();
-				gc.setAlpha(this.lineAlpha);
-				drawLineRange(gc, startLine, endLine);
-				gc.setAlpha(alpha);
-			} else {
-				drawLineRange(gc, startLine, endLine);
-			}
-			gc.setForeground(fgColor);
-			gc.setLineAttributes(lineAttributes);
-		}
-	}
+    /*
+     * @see org.eclipse.jface.text.IPainter#deactivate(boolean)
+     */
+    public void deactivate(boolean redraw) {
+        if (fIsActive) {
+            fIsActive = false;
+            fTextWidget.removePaintListener(this);
+            if (redraw) {
+                redrawAll();
+            }
+        }
+    }
 
-	/**
-	 * Draw the given line range.
-	 * 
-	 * @param gc
-	 *            the GC
-	 * @param startLine
-	 *            first line number
-	 * @param endLine
-	 *            last line number (inclusive)
-	 * @param x
-	 *            the X-coordinate of the drawing range
-	 * @param w
-	 *            the width of the drawing range
-	 */
-	private void drawLineRange(GC gc, int startLine, int endLine) {
-		StyledText styledText = fTextWidget;
-		int tabToSpaces = styledText.getTabs();
+    /*
+     * @see org.eclipse.jface.text.IPainter#setPositionManager(org.eclipse.jface.
+     * text.IPaintPositionManager)
+     */
+    public void setPositionManager(IPaintPositionManager manager) {
+        // no need for a position manager
+    }
 
-		for (int lineNr = startLine; lineNr <= endLine; lineNr++) {
-			if (isBlockCollapsedAtLine(lineNr)) {
-				continue;
-			}
+    /*
+     * @see org.eclipse.swt.events.PaintListener#paintControl(org.eclipse.swt.events
+     * .PaintEvent)
+     */
+    public void paintControl(PaintEvent event) {
+        if (fTextWidget != null) {
+            handleDrawRequest(event.gc, event.x, event.y, event.width, event.height);
+        }
+    }
 
-			Iterable<Integer> xxx = lineIntendCalculator.calculate(styledText, lineNr, tabToSpaces, indentSettings);
-			for (Integer integer : xxx) {
-				draw(gc, integer);
-			}
-		}
-	}
+    /*
+     * Draw characters in view range.
+     */
+    private void handleDrawRequest(GC gc, int x, int y, int w, int h) {
+        int startLine = fTextWidget.getLineIndex(y);
+        int endLine = fTextWidget.getLineIndex(y + h - 1);
+        if (startLine <= endLine && startLine < fTextWidget.getLineCount()) {
+            Color fgColor = gc.getForeground();
+            LineAttributes lineAttributes = gc.getLineAttributes();
+            gc.setForeground(Activator.getDefault().getColor());
+            gc.setLineStyle(lineStyle);
+            gc.setLineWidth(lineWidth);
+            spaceWidth = gc.getAdvanceWidth(' ');
+            if (fIsAdvancedGraphicsPresent) {
+                int alpha = gc.getAlpha();
+                gc.setAlpha(this.lineAlpha);
+                drawLineRange(gc, startLine, endLine);
+                gc.setAlpha(alpha);
+            } else {
+                drawLineRange(gc, startLine, endLine);
+            }
+            gc.setForeground(fgColor);
+            gc.setLineAttributes(lineAttributes);
+        }
+    }
 
-	private boolean isBlockCollapsedAtLine(int line) {
+    /**
+     * Draw the given line range.
+     *
+     * @param gc
+     *            the GC
+     * @param startLine
+     *            first line number
+     * @param endLine
+     *            last line number (inclusive)
+     * @param x
+     *            the X-coordinate of the drawing range
+     * @param w
+     *            the width of the drawing range
+     */
+    private void drawLineRange(GC gc, int startLine, int endLine) {
+        IText text = new IText() {
+            @Override
+            public int getOffsetAtLine(int lineNr) {
+                return fTextWidget.getLineAtOffset(lineNr);
+            }
+
+            @Override
+            public int getLineCount() {
+                return fTextWidget.getLineCount();
+            }
+
+            @Override
+            public String getLine(int lineNr) {
+                return fTextWidget.getLine(lineNr);
+            }
+
+            @Override
+            public int getTabsToSpaces() {
+                return fTextWidget.getTabs();
+            }
+        };
+
+        for (int lineNr = startLine; lineNr <= endLine; lineNr++) {
+            if (isBlockCollapsedAtLine(lineNr)) {
+                continue;
+            }
+
+            for (Integer integer : LineIndentCalculator.calculateLineIndents(text, lineNr, indentSettings)) {
+                draw(gc, integer);
+            }
+        }
+    }
+
+    private boolean isBlockCollapsedAtLine(int line) {
         if (fTextViewer instanceof ITextViewerExtension5) {
             ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
             int modelLine = extension.widgetLine2ModelLine(line);
@@ -224,61 +240,60 @@ public class IndentGuidePainter implements IPainter, PaintListener {
         }
         return false;
     }
-	
-	/**
-	 * Redraw all of the text widgets visible content.
-	 */
-	private void redrawAll() {
-		fTextWidget.redraw();
-	}
 
-	/**
-	 * 
-	 * @param gc
-	 * @param offset
-	 */
-	private void draw(GC gc, int offset) {
-		Point pos = fTextWidget.getLocationAtOffset(offset);
-		gc.drawLine(pos.x, pos.y, pos.x, pos.y + fTextWidget.getLineHeight(offset));
-	}
+    /**
+     * Redraw all of the text widgets visible content.
+     */
+    private void redrawAll() {
+        fTextWidget.redraw();
+    }
 
-	/**
-	 * Convert a document offset to the corresponding widget offset.
-	 * 
-	 * @param documentOffset
-	 *            the document offset
-	 * @return widget offset
-	 */
-	private int getWidgetOffset(int documentOffset) {
-		if (fTextViewer instanceof ITextViewerExtension5) {
-			ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
-			return extension.modelOffset2WidgetOffset(documentOffset);
-		}
-		IRegion visible = fTextViewer.getVisibleRegion();
-		int widgetOffset = documentOffset - visible.getOffset();
-		if (widgetOffset > visible.getLength()) {
-			return -1;
-		}
-		return widgetOffset;
-	}
+    /**
+     *
+     * @param gc
+     * @param offset
+     */
+    private void draw(GC gc, int offset) {
+        Point pos = fTextWidget.getLocationAtOffset(offset);
+        gc.drawLine(pos.x + 1, pos.y, pos.x + 1, pos.y + fTextWidget.getLineHeight(offset));
+    }
 
-	/**
-	 * Convert a widget offset to the corresponding document offset.
-	 * 
-	 * @param widgetOffset
-	 *            the widget offset
-	 * @return document offset
-	 */
-	private int getDocumentOffset(int widgetOffset) {
-		if (fTextViewer instanceof ITextViewerExtension5) {
-			ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
-			return extension.widgetOffset2ModelOffset(widgetOffset);
-		}
-		IRegion visible = fTextViewer.getVisibleRegion();
-		if (widgetOffset > visible.getLength()) {
-			return -1;
-		}
-		return widgetOffset + visible.getOffset();
-	}
+    /**
+     * Convert a document offset to the corresponding widget offset.
+     *
+     * @param documentOffset
+     *            the document offset
+     * @return widget offset
+     */
+    private int getWidgetOffset(int documentOffset) {
+        if (fTextViewer instanceof ITextViewerExtension5) {
+            ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
+            return extension.modelOffset2WidgetOffset(documentOffset);
+        }
+        IRegion visible = fTextViewer.getVisibleRegion();
+        int widgetOffset = documentOffset - visible.getOffset();
+        if (widgetOffset > visible.getLength()) {
+            return -1;
+        }
+        return widgetOffset;
+    }
 
+    /**
+     * Convert a widget offset to the corresponding document offset.
+     *
+     * @param widgetOffset
+     *            the widget offset
+     * @return document offset
+     */
+    private int getDocumentOffset(int widgetOffset) {
+        if (fTextViewer instanceof ITextViewerExtension5) {
+            ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
+            return extension.widgetOffset2ModelOffset(widgetOffset);
+        }
+        IRegion visible = fTextViewer.getVisibleRegion();
+        if (widgetOffset > visible.getLength()) {
+            return -1;
+        }
+        return widgetOffset + visible.getOffset();
+    }
 }

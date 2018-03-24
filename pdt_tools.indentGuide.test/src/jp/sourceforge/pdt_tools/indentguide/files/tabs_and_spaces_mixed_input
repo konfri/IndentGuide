@@ -1,0 +1,52 @@
+public class Test {
+	// this one contains only tabs
+	private static void tabs(String string) {
+		if (true) {
+			if (true) {
+				if (true) {
+					if (true) {
+						if (true) {
+							if (true) {
+								if (true) {
+									if (true) {
+										if (true) {
+											if (true) {
+												System.out.println("lest");
+												System.out.println("West");
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+    // this one only contains spaces
+    private static void spaces(String string) {
+        if (true) {
+            if (true) {
+                if (true) {
+                    if (true) {
+                        if (true) {
+                            if (true) {
+                                if (true) {
+                                    if (true) {
+                                        if (true) {
+                                            if (true) {
+                                                System.out.println("lest");
+                                                System.out.println("West");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

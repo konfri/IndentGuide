@@ -1,0 +1,15 @@
+public IndentGuidePainter(ITextViewer textViewer) {
+    super();
+    /*
+     * block comment
+     * block comment
+     * block comment
+     * block comment
+     * block comment
+     * block comment
+     */
+
+    // comment
+    // comment
+
+}

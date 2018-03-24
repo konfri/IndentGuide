@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?pde version="3.8"?><target name="indentguide" sequenceNumber="9">
+<locations>
+<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+<unit id="org.eclipse.e4.core.tools.feature.source.feature.group" version="4.7.0.v20170515-1617"/>
+<unit id="org.eclipse.jdt.feature.group" version="3.13.2.v20171130-0906"/>
+<unit id="org.eclipse.objectteams.otdt.feature.group" version="2.6.1.201712031505"/>
+<unit id="org.eclipse.objectteams.otequinox.feature.group" version="2.6.1.201712031505"/>
+<unit id="org.eclipse.sdk.feature.group" version="4.7.2.v20171130-0906"/>
+<unit id="org.eclipse.sphinx.sdk.feature.group" version="0.11.0.201706140911"/>
+<unit id="org.eclipse.wb.core.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.core.java.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.core.ui.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.core.xml.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.doc.user.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.layout.group.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.rcp.SWT_AWT_support.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.rcp.doc.user.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.rcp.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.swing.doc.user.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.swing.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.swt.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wb.xwt.feature.feature.group" version="1.9.0"/>
+<unit id="org.eclipse.wst.common.fproj.feature.group" version="3.7.1.v201707201954"/>
+<unit id="org.eclipse.wst.jsdt.chromium.debug.feature.feature.group" version="0.6.0.v201705091354"/>
+<unit id="org.eclipse.wst.jsdt.feature.feature.group" version="2.1.0.v201706011953"/>
+<unit id="org.eclipse.wst.server_adapters.feature.feature.group" version="3.2.601.v201711302104"/>
+<unit id="org.eclipse.wst.web_ui.feature.feature.group" version="3.9.1.v201711152154"/>
+<unit id="org.eclipse.wst.xml_ui.feature.feature.group" version="3.9.1.v201707252002"/>
+<unit id="org.eclipse.wst.xsl.feature.feature.group" version="1.3.401.v201509231858"/>
+<repository location="http://download.eclipse.org/releases/oxygen/"/>
+</location>
+<location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+<unit id="org.assertj" version="1.7.1.v20170413-2026"/>
+<unit id="org.junit" version="4.12.0.v201504281640"/>
+<repository location="http://download.eclipse.org/tools/orbit/downloads/drops/R20180206163158/repository/"/>
+</location>
+</locations>
+</target>

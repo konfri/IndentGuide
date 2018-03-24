@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: indentGuideTest
+Bundle-SymbolicName: indentGuideTest
+Bundle-Version: 1.4.1.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Fragment-Host: indentGuide;bundle-version="1.4.1"
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.jface.text,
+ org.eclipse.ui.workbench.texteditor,
+ org.assertj;bundle-version="1.7.1",
+ org.junit,
+ indentGuide

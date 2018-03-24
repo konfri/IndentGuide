@@ -1,0 +1,8 @@
+public class IndentToTextPrinter {
+|    public static me() {
+|    |    System.out.print("bla");
+|    |
+|    |    // the white line should contain the same amount of indent that the previous line has
+|    |    System.out.print("blubb");
+|    }
+}

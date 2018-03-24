@@ -1,0 +1,8 @@
+public class IndentToTextPrinter {
+|    public static me() {
+|    |    System.out.print("bla");
+
+|    |    // if the drawing on blank line is skipped then there shouldn't be any indents
+|    |    System.out.print("blubb");
+|    }
+}

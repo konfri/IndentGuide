@@ -1,119 +1,127 @@
 package jp.sourceforge.pdt_tools.indentguide;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class LineIndentCalculator {
 
-    /**
-     * Calculates line indents as drawing happens when the cursor is moved line by line.
-     */
-    public static Iterable<Integer> calculateLineIndents(IText text, int lineNr, IndentSettings indentSettings) {
-        String textAsString = text.getLine(lineNr);
-        int lineOffset = text.getOffsetAtLine(lineNr);
-        int tabToSpaces = text.getTabsToSpaces();
-        int extend = 0;
-        if (indentSettings.isSkipBlockComment() && assumeCommentBlock(textAsString, tabToSpaces)) {
-            extend -= tabToSpaces;
-        }
-        if (indentSettings.isDrawBlankLine() && textAsString.trim().length() == 0) {
-            int prevLine = lineNr;
-            while (--prevLine >= 0) {
-                textAsString = text.getLine(prevLine);
-                if (textAsString.trim().length() > 0) {
-                    int postLine = lineNr;
-                    int lineCount = text.getLineCount();
-                    while (++postLine < lineCount) {
-                        String tmp = text.getLine(postLine);
-                        if (tmp.trim().length() > 0) {
-                            if (countSpaces(textAsString, tabToSpaces) < countSpaces(tmp, tabToSpaces)) {
-                                extend += tabToSpaces;
-                            }
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
+	/**
+	 * Calculates line indents as drawing happens when the cursor is moved line by line.
+	 */
+	public static Iterable<Integer> calculateLineIndents(IText text, int lineNr, IndentSettings indentSettings) {
+		String lineAsString = text.getLine(lineNr);
+		int lineOffset = text.getOffsetAtLine(lineNr);
+		int tabToSpaces = text.getTabsToSpaces();
 
-        int startOffset = indentSettings.isDrawLeftEnd() ? 0 : tabToSpaces;
-        int endOffset = countSpaces(textAsString, tabToSpaces) + extend;
+		if (isLineBlank(lineAsString) && indentSettings.skipBlankLine()) {
+			return Collections.emptyList();
+		} else if (isLineBlank(lineAsString) && indentSettings.drawBlankLine()) {
+			Iterable<Integer> calculateLineIndents = calculateLineIndents(text, lineNr - 1, indentSettings);
 
-        List<Integer> list = new ArrayList<>();
+			int previousLineOffset = text.getOffsetAtLine(lineNr - 1);
+			int currentLineOffset = text.getOffsetAtLine(lineNr);
 
-        for (int i = 0; i < textAsString.length() && Character.isWhitespace(textAsString.charAt(i)); i++) {
-            switch (textAsString.charAt(i)) {
-            case '\t':
-                list.add(lineOffset + i);
-                break;
-            case ' ':
-                boolean spaces = true;
-                for (int j = i + 1; j < i + tabToSpaces; j++) {
-                    if (textAsString.charAt(j) != ' ') {
-                        spaces = false;
-                    }
-                }
-                if (spaces) {
-                    list.add(lineOffset + i);
-                    i += tabToSpaces - 1;
-                }
-            }
-        }
+			List<Integer> collect = StreamSupport.stream(calculateLineIndents.spliterator(), false)
+					.map(t -> t + (text.getOffsetAtLine(lineNr) - text.getOffsetAtLine(lineNr - 1)))
+					.collect(Collectors.toList());
+			return collect;
 
-        if (removeFirstIndent(indentSettings)) {
-            if (list.iterator().next() == 0) {
-                list.remove(0);
-            }
-        }
+		}
 
-        return list;
-    }
+		List<Integer> list = new ArrayList<>();
 
-    private static boolean removeFirstIndent(IndentSettings indentSettings) {
-        return !indentSettings.isDrawLeftEnd();
-    }
+		if (indentSettings.drawFirst() &&
+				(isFirstCharAnWhitespace(lineAsString) || isLineBlank(lineAsString))) {
+			list.add(lineOffset);
+		}
 
-    private static int countSpaces(String str, int tabs) {
-        int count = 0;
-        for (int i = 0; i < str.length(); i++) {
-            switch (str.charAt(i)) {
-            case ' ':
-                count++;
-                break;
-            case '\t':
-                int z = tabs - count % tabs;
-                count += z;
-                break;
-            default:
-                return count;
-            }
-        }
-        return count;
-    }
+		for (int i = 0; i < lineAsString.length() && Character.isWhitespace(lineAsString.charAt(i)); i++) {
 
-    private static boolean assumeCommentBlock(String text, int tabs) {
-        int count = countSpaces(text, tabs);
-        count = (count / tabs) * tabs;
-        int index = 0;
-        for (int i = 0; i < count; i++) {
-            switch (text.charAt(index)) {
-            case ' ':
-                index++;
-                break;
-            case '\t':
-                index++;
-                int z = tabs - i % tabs;
-                i += z;
-                break;
-            default:
-                i = count;
-            }
-        }
-        text = text.substring(index);
-        if (text.matches("^ \\*([ \\t].*|/.*|)$")) {
-            return true;
-        }
-        return false;
-    }
+			switch (lineAsString.charAt(i)) {
+			case '\t':
+				if (isNextCharWhitespace(lineAsString, i)) {
+					list.add(lineOffset + i + 1);
+				}
+				break;
+			case ' ':
+				if (enoughSpacesForTab(lineAsString, tabToSpaces, i)
+						&& isNextCharWhitespace(lineAsString, i + tabToSpaces - 1)) {
+
+					list.add(lineOffset + i + tabToSpaces);
+					i += tabToSpaces - 1;
+				}
+			}
+		}
+
+		if (!list.isEmpty()
+				&& isBlockComment(lineAsString, tabToSpaces, list.get(list.size() - 1) - lineOffset)
+				&& indentSettings.skipBlockComment()) {
+			list.remove(list.size() - 1);
+		}
+
+		return list;
+	}
+
+	private static boolean isBlockComment(String lineAsString, int tabToSpaces, Integer lastIndentLineOffset) {
+		if (enoughSpacesForTab(lineAsString, tabToSpaces, lastIndentLineOffset)) {
+			return false;
+		}
+
+		for (int i = lastIndentLineOffset; i < lineAsString.length(); i++) {
+			if (Character.isWhitespace(lineAsString.charAt(i))) {
+				continue;
+			}
+
+			if (lineAsString.charAt(i) == '*') {
+				return true;
+			}
+
+		}
+
+		return false;
+	}
+
+	private static boolean isNextCharWhitespace(String lineAsString, int offset) {
+		if (lineAsString.length() <= offset + 1) {
+			return false;
+		}
+
+		return Character.isWhitespace(lineAsString.charAt(offset + 1));
+	}
+
+	private static boolean isFirstCharAnWhitespace(String lineAsString) {
+		if (lineAsString == null || lineAsString.isEmpty()) {
+			return false;
+		}
+
+		return Character.isWhitespace(lineAsString.charAt(0));
+	}
+
+	private static boolean isLineBlank(String lineAsString) {
+		if (lineAsString == null || lineAsString.isEmpty()) {
+			return true;
+		}
+		for (int i = 0; i < lineAsString.length(); i++) {
+			if (!Character.isWhitespace(lineAsString.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean enoughSpacesForTab(String textAsString, int tabToSpaces, int i) {
+		boolean spaces = true;
+		for (int j = i + 1; j < i + tabToSpaces; j++) {
+			if (textAsString.length() <= j) {
+				return false;
+			}
+			if (textAsString.charAt(j) != ' ') {
+				spaces = false;
+			}
+		}
+		return spaces;
+	}
 }

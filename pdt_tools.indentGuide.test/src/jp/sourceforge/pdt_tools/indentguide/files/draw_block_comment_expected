@@ -11,5 +11,5 @@ public IndentGuidePainter(ITextViewer textViewer) {
 |    | * block comment
 |    | * block comment
 |    | * block comment
-|     */
+|    | */
 }

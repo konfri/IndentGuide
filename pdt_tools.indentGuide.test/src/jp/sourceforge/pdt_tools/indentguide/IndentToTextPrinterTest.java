@@ -26,4 +26,10 @@ public class IndentToTextPrinterTest {
         assertThat(IndentToTextPrinter.print("		aaaa\n		bbbb", 0, 1, 7, 8))
                 .isEqualTo("|	|	aaaa" + nl + "|	|	bbbb"); // tabs
     }
+    
+    @Test
+    public void arraySorted() {
+        assertThat(IndentToTextPrinter.print("        a", 4, 0)).isEqualTo("|    |    a"); // spaces
+        assertThat(IndentToTextPrinter.print("		a", 1, 0)).isEqualTo("|	|	a"); // tabs
+    }
 }

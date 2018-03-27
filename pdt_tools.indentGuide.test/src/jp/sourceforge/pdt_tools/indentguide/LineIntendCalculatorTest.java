@@ -1,7 +1,6 @@
 package jp.sourceforge.pdt_tools.indentguide;
 
 import static java.util.stream.Collectors.toMap;
-import static jp.sourceforge.pdt_tools.indentguide.LineIndentCalculator.calculateLineIndents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -10,14 +9,11 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class LineIntendCalculatorTest {
 
 	// TODO add junit5
-	// FIXME there is on array out of bound when one line contains three spaces
-	// TODO add all other files to the test (parametized)
 
 	@Test
 	public void tabsAndSpacesMixed() throws IOException {
@@ -58,7 +54,7 @@ public class LineIntendCalculatorTest {
 		IndentSettings is = IndentSettings.builder()
 				.skipBlockComment(true)
 				.build();
-		
+
 		// when
 		List<Integer> indents = calculateIndents(text, is);
 
@@ -66,7 +62,7 @@ public class LineIntendCalculatorTest {
 		assertThat(IndentToTextPrinter.print(text.getLines(), indents))
 				.isEqualTo(FileReader.read("files/skip_block_comment_expected"));
 	}
-	
+
 	@Test
 	public void skipFirstIndent() throws IOException {
 		// given
@@ -82,7 +78,7 @@ public class LineIntendCalculatorTest {
 		assertThat(IndentToTextPrinter.print(text.getLines(), indents))
 				.isEqualTo(FileReader.read("files/skip_first_indent_expected"));
 	}
-	
+
 	@Test
 	public void skipWhiteLine() throws IOException {
 		// given
@@ -98,8 +94,7 @@ public class LineIntendCalculatorTest {
 		assertThat(IndentToTextPrinter.print(text.getLines(), indents))
 				.isEqualTo(FileReader.read("files/skip_white_line_expected"));
 	}
-	
-	@Ignore
+
 	@Test
 	public void drawWhiteLine() throws IOException {
 		// given
@@ -115,15 +110,31 @@ public class LineIntendCalculatorTest {
 		assertThat(IndentToTextPrinter.print(text.getLines(), indents))
 				.isEqualTo(FileReader.read("files/draw_white_line_expected"));
 	}
-	
+
+	@Test
+	public void firstLineWhiteSpace() throws IOException {
+		// given
+		MockTextImpl text = MockTextImpl.builder("files/first_line_white_space_input")
+				.build();
+		IndentSettings is = IndentSettings.builder()
+				.drawBlankLine(true)
+				.build();
+		// when
+		List<Integer> indents = calculateIndents(text, is);
+
+		// then
+		assertThat(IndentToTextPrinter.print(text.getLines(), indents))
+				.isEqualTo(FileReader.read("files/first_line_white_space_expected"));
+	}
+
 	private List<Integer> calculateIndents(MockTextImpl text, IndentSettings is) {
 		return text.getZippedLinesWithIndex()
 				.entrySet()
 				.stream()
-				.collect(toMap(Entry::getKey, e -> calculateLineIndents(text, e.getKey(), is)))
+				.collect(toMap(Entry::getKey, e -> LineIndentCalculator.calculateLineIndents(text, e.getKey(), is)))
 				.values()
 				.stream()
-				.flatMap(i -> StreamSupport.stream(i.spliterator(), false))
+				.flatMap(i -> i.stream())
 				.collect(Collectors.toList());
 	}
 }

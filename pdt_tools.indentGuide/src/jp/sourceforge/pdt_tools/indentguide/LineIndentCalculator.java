@@ -11,7 +11,7 @@ public class LineIndentCalculator {
 	/**
 	 * Calculates line indents as drawing happens when the cursor is moved line by line.
 	 */
-	public static Iterable<Integer> calculateLineIndents(IText text, int lineNr, IndentSettings indentSettings) {
+	public static List<Integer> calculateLineIndents(IText text, int lineNr, IndentSettings indentSettings) {
 		String lineAsString = text.getLine(lineNr);
 		int lineOffset = text.getOffsetAtLine(lineNr);
 		int tabToSpaces = text.getTabsToSpaces();
@@ -19,24 +19,21 @@ public class LineIndentCalculator {
 		if (isLineBlank(lineAsString) && indentSettings.skipBlankLine()) {
 			return Collections.emptyList();
 		} else if (isLineBlank(lineAsString) && indentSettings.drawBlankLine()) {
-			Iterable<Integer> calculateLineIndents = calculateLineIndents(text, lineNr - 1, indentSettings);
+			if (lineNr == 0) {
+				return Collections.emptyList();
+			}
 
-			int previousLineOffset = text.getOffsetAtLine(lineNr - 1);
-			int currentLineOffset = text.getOffsetAtLine(lineNr);
+			List<Integer> values = calculateLineIndents(text, lineNr - 1, indentSettings);
+			if (values.isEmpty()) {
+				return calculateFirst(indentSettings, lineAsString, lineOffset);
+			}
 
-			List<Integer> collect = StreamSupport.stream(calculateLineIndents.spliterator(), false)
+			return values.stream()
 					.map(t -> t + (text.getOffsetAtLine(lineNr) - text.getOffsetAtLine(lineNr - 1)))
 					.collect(Collectors.toList());
-			return collect;
-
 		}
 
-		List<Integer> list = new ArrayList<>();
-
-		if (indentSettings.drawFirst() &&
-				(isFirstCharAnWhitespace(lineAsString) || isLineBlank(lineAsString))) {
-			list.add(lineOffset);
-		}
+		List<Integer> list = calculateFirst(indentSettings, lineAsString, lineOffset);
 
 		for (int i = 0; i < lineAsString.length() && Character.isWhitespace(lineAsString.charAt(i)); i++) {
 
@@ -62,6 +59,15 @@ public class LineIndentCalculator {
 			list.remove(list.size() - 1);
 		}
 
+		return list;
+	}
+
+	private static List<Integer> calculateFirst(IndentSettings indentSettings, String lineAsString, int lineOffset) {
+		List<Integer> list = new ArrayList<>();
+		if (indentSettings.drawFirst() &&
+				(isFirstCharAnWhitespace(lineAsString) || isLineBlank(lineAsString))) {
+			list.add(lineOffset);
+		}
 		return list;
 	}
 

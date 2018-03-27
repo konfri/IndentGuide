@@ -201,7 +201,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
         IText text = new IText() {
             @Override
             public int getOffsetAtLine(int lineNr) {
-                return fTextWidget.getLineAtOffset(lineNr);
+                return fTextWidget.getOffsetAtLine(lineNr);
             }
 
             @Override
@@ -224,7 +224,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
             if (isBlockCollapsedAtLine(lineNr)) {
                 continue;
             }
-
+            
             for (Integer integer : LineIndentCalculator.calculateLineIndents(text, lineNr, indentSettings)) {
                 draw(gc, integer);
             }

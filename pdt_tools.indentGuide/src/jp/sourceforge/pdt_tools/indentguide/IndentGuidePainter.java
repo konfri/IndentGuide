@@ -4,12 +4,14 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
  * Contributors:
- *     Anton Leherbauer (Wind River Systems) - initial API and implementation - https://bugs.eclipse.org/bugs/show_bug.cgi?id=22712
- *     Anton Leherbauer (Wind River Systems) - [painting] Long lines take too long to display when "Show Whitespace Characters" is enabled - https://bugs.eclipse.org/bugs/show_bug.cgi?id=196116
- *     Anton Leherbauer (Wind River Systems) - [painting] Whitespace characters not drawn when scrolling to right slowly - https://bugs.eclipse.org/bugs/show_bug.cgi?id=206633
- *     Tom Eicher (Avaloq Evolution AG) - block selection mode
+ * Anton Leherbauer (Wind River Systems) - initial API and implementation -
+ * https://bugs.eclipse.org/bugs/show_bug.cgi?id=22712
+ * Anton Leherbauer (Wind River Systems) - [painting] Long lines take too long to display when "Show Whitespace
+ * Characters" is enabled - https://bugs.eclipse.org/bugs/show_bug.cgi?id=196116
+ * Anton Leherbauer (Wind River Systems) - [painting] Whitespace characters not drawn when scrolling to right slowly -
+ * https://bugs.eclipse.org/bugs/show_bug.cgi?id=206633
+ * Tom Eicher (Avaloq Evolution AG) - block selection mode
  *******************************************************************************/
 package jp.sourceforge.pdt_tools.indentguide;
 
@@ -89,6 +91,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
     /*
      * @see org.eclipse.jface.text.IPainter#dispose()
      */
+    @Override
     public void dispose() {
         fTextViewer = null;
         fTextWidget = null;
@@ -97,19 +100,20 @@ public class IndentGuidePainter implements IPainter, PaintListener {
     /*
      * @see org.eclipse.jface.text.IPainter#paint(int)
      */
+    @Override
     public void paint(int reason) {
         IDocument document = fTextViewer.getDocument();
-        if (document == null) {
+        if( document == null) {
             deactivate(false);
             return;
         }
-        if (!fIsActive) {
+        if( !fIsActive) {
             fIsActive = true;
             fTextWidget.addPaintListener(this);
             redrawAll();
-        } else if (reason == CONFIGURATION || reason == INTERNAL) {
+        } else if( (reason == CONFIGURATION) || (reason == INTERNAL)) {
             redrawAll();
-        } else if (reason == TEXT_CHANGE) {
+        } else if( reason == TEXT_CHANGE) {
             // redraw current line only
             try {
                 IRegion lineRegion = document
@@ -117,7 +121,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
                 int widgetOffset = getWidgetOffset(lineRegion.getOffset());
                 int charCount = fTextWidget.getCharCount();
                 int redrawLength = Math.min(lineRegion.getLength(), charCount - widgetOffset);
-                if (widgetOffset >= 0 && redrawLength > 0) {
+                if( (widgetOffset >= 0) && (redrawLength > 0)) {
                     fTextWidget.redrawRange(widgetOffset, redrawLength, true);
                 }
             } catch (BadLocationException e) {
@@ -129,11 +133,12 @@ public class IndentGuidePainter implements IPainter, PaintListener {
     /*
      * @see org.eclipse.jface.text.IPainter#deactivate(boolean)
      */
+    @Override
     public void deactivate(boolean redraw) {
-        if (fIsActive) {
+        if( fIsActive) {
             fIsActive = false;
             fTextWidget.removePaintListener(this);
-            if (redraw) {
+            if( redraw) {
                 redrawAll();
             }
         }
@@ -143,6 +148,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
      * @see org.eclipse.jface.text.IPainter#setPositionManager(org.eclipse.jface.
      * text.IPaintPositionManager)
      */
+    @Override
     public void setPositionManager(IPaintPositionManager manager) {
         // no need for a position manager
     }
@@ -151,8 +157,9 @@ public class IndentGuidePainter implements IPainter, PaintListener {
      * @see org.eclipse.swt.events.PaintListener#paintControl(org.eclipse.swt.events
      * .PaintEvent)
      */
+    @Override
     public void paintControl(PaintEvent event) {
-        if (fTextWidget != null) {
+        if( fTextWidget != null) {
             handleDrawRequest(event.gc, event.x, event.y, event.width, event.height);
         }
     }
@@ -162,15 +169,15 @@ public class IndentGuidePainter implements IPainter, PaintListener {
      */
     private void handleDrawRequest(GC gc, int x, int y, int w, int h) {
         int startLine = fTextWidget.getLineIndex(y);
-        int endLine = fTextWidget.getLineIndex(y + h - 1);
-        if (startLine <= endLine && startLine < fTextWidget.getLineCount()) {
+        int endLine = fTextWidget.getLineIndex((y + h) - 1);
+        if( (startLine <= endLine) && (startLine < fTextWidget.getLineCount())) {
             Color fgColor = gc.getForeground();
             LineAttributes lineAttributes = gc.getLineAttributes();
             gc.setForeground(Activator.getDefault().getColor());
             gc.setLineStyle(lineStyle);
             gc.setLineWidth(lineWidth);
             spaceWidth = gc.getAdvanceWidth(' ');
-            if (fIsAdvancedGraphicsPresent) {
+            if( fIsAdvancedGraphicsPresent) {
                 int alpha = gc.getAlpha();
                 gc.setAlpha(this.lineAlpha);
                 drawLineRange(gc, startLine, endLine);
@@ -221,10 +228,10 @@ public class IndentGuidePainter implements IPainter, PaintListener {
         };
 
         for (int lineNr = startLine; lineNr <= endLine; lineNr++) {
-            if (isBlockCollapsedAtLine(lineNr)) {
+            if( isBlockCollapsedAtLine(lineNr)) {
                 continue;
             }
-            
+
             for (Integer integer : LineIndentCalculator.calculateLineIndents(text, lineNr, indentSettings)) {
                 draw(gc, integer);
             }
@@ -232,7 +239,7 @@ public class IndentGuidePainter implements IPainter, PaintListener {
     }
 
     private boolean isBlockCollapsedAtLine(int line) {
-        if (fTextViewer instanceof ITextViewerExtension5) {
+        if( fTextViewer instanceof ITextViewerExtension5) {
             ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
             int modelLine = extension.widgetLine2ModelLine(line);
             int widgetLine2 = extension.modelLine2WidgetLine(modelLine + 1);
@@ -249,7 +256,6 @@ public class IndentGuidePainter implements IPainter, PaintListener {
     }
 
     /**
-     *
      * @param gc
      * @param offset
      */
@@ -266,13 +272,13 @@ public class IndentGuidePainter implements IPainter, PaintListener {
      * @return widget offset
      */
     private int getWidgetOffset(int documentOffset) {
-        if (fTextViewer instanceof ITextViewerExtension5) {
+        if( fTextViewer instanceof ITextViewerExtension5) {
             ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
             return extension.modelOffset2WidgetOffset(documentOffset);
         }
         IRegion visible = fTextViewer.getVisibleRegion();
         int widgetOffset = documentOffset - visible.getOffset();
-        if (widgetOffset > visible.getLength()) {
+        if( widgetOffset > visible.getLength()) {
             return -1;
         }
         return widgetOffset;
@@ -286,12 +292,12 @@ public class IndentGuidePainter implements IPainter, PaintListener {
      * @return document offset
      */
     private int getDocumentOffset(int widgetOffset) {
-        if (fTextViewer instanceof ITextViewerExtension5) {
+        if( fTextViewer instanceof ITextViewerExtension5) {
             ITextViewerExtension5 extension = (ITextViewerExtension5) fTextViewer;
             return extension.widgetOffset2ModelOffset(widgetOffset);
         }
         IRegion visible = fTextViewer.getVisibleRegion();
-        if (widgetOffset > visible.getLength()) {
+        if( widgetOffset > visible.getLength()) {
             return -1;
         }
         return widgetOffset + visible.getOffset();

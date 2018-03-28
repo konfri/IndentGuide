@@ -16,6 +16,6 @@ public class FileReader {
     }
 
     public static CharSequence read(String fileName) {
-        return  String.join(System.getProperty("line.separator"), readLines(fileName));
+        return String.join(System.getProperty("line.separator"), readLines(fileName));
     }
 }
